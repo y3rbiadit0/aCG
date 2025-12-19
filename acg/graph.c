@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <limits.h>
 
 /**
  * ‘acggraph_init()’ creates a graph from a given adjacency matrix.
