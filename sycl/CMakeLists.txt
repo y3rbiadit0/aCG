@@ -71,7 +71,8 @@ set(PROJECT_SOURCES
 	acg-sycl.cpp
 	)
 
-include(CheckCSourceCompiles)
+
+  include(CheckCSourceCompiles)
 check_c_source_compiles(
 "#define _POSIX_C_SOURCE 200112L
 #include <time.h>
@@ -107,12 +108,13 @@ if (METIS_FOUND)
 endif ()
 
 # Find SYCL
-find_package(IntelDPCPP)
-if(NOT IntelDPCPP_FOUND)
-    # Fallback or generic SYCL search if needed, but for now assume IntelDPCPP or user provides flags
-    message(STATUS "IntelDPCPP not found via find_package, assuming compiler handles SYCL or user provided flags.")
+if(NOT SYCL_FLAGS)
+    # -fsycl is the magic flag for dpcpp/clang++ to enable SYCL
+    set(SYCL_FLAGS "-fsycl")
 endif()
+
 add_definitions(-DACG_HAVE_SYCL)
+
 
 
 find_package(ZLIB)
@@ -150,6 +152,24 @@ if (PETSC_FOUND)
 endif ()
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
+
+# 1. Apply SYCL flags ONLY to the C++ files to prevent 
+# C files from being compiled as C++ (fixing the malloc errors)
+set(SYCL_SOURCE_FILES
+    "../acg/cgsycl.cpp"
+    "../acg/cg-kernels-sycl.cpp"
+    "acg-sycl.cpp"
+)
+set_source_files_properties(${SYCL_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "${SYCL_FLAGS}")
+
+# 2. IMPORTANT: Apply SYCL flags to the LINKER step
+# This tells clang++ to link against libsycl.so and handle NVIDIA device code
+target_link_options(${PROJECT_NAME} PRIVATE ${SYCL_FLAGS})
+
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wno-reserved-user-defined-literal)
+
+
 target_link_libraries(${PROJECT_NAME} MPI::MPI_C m)
 target_include_directories(${PROJECT_NAME} PRIVATE ..)
 
