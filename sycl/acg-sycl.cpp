@@ -33,14 +33,15 @@
  *
  */
 
-#define _GNU_SOURCE
 
 #include "acg/cgpetsc.h"
 #include "acg/cgsycl.h"
 #include "acg/comm.h"
 #include "acg/config.h"
 #include "acg/error.h"
-#include "acg/fmtspec.h"
+extern "C" {
+    #include "../acg/fmtspec.h"
+}
 #include "acg/graph.h"
 #include "acg/halo.h"
 #include "acg/mtxfile.h"
@@ -61,7 +62,7 @@
 #include <metis.h>
 #endif
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #include <float.h>
 #include <stdarg.h>
@@ -70,6 +71,7 @@
 
 #include <errno.h>
 #include <sched.h>
+#include <math.h>
 
 const char *program_name = "acg-sycl";
 const char *program_version = "0.9.4";
@@ -714,7 +716,9 @@ int main(int argc, char **argv) {
 
   /* initialise communication library */
   struct acgcomm comm;
-  acgcomm_init(&comm, args.commtype, MPI_COMM_WORLD);
+  const MPI_Comm mpicomm = MPI_COMM_WORLD;
+  int mpierrcode = 0;
+  err = acgcomm_init_mpi(&comm, mpicomm, &mpierrcode);
 
   int rank, commsize;
   acgcomm_rank(&comm, &rank);
@@ -729,7 +733,7 @@ int main(int argc, char **argv) {
   /* initialize SYCL queue */
   sycl::queue q;
   try {
-    q = sycl::queue(sycl::default_selector{});
+    q = sycl::queue(sycl::default_selector_v);
   } catch (sycl::exception const &e) {
     std::cerr << "SYCL exception caught: " << e.what() << std::endl;
     return 1;

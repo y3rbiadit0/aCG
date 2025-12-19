@@ -40,7 +40,7 @@
 #include <mpi.h>
 #endif
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

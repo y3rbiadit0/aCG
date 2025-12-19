@@ -33,7 +33,7 @@
 #define ACG_CG_KERNELS_SYCL_H
 
 #include "acg/config.h"
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 #ifdef __cplusplus
 extern "C" {

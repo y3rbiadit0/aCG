@@ -43,7 +43,7 @@
 #include <mpi.h>
 #endif
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
