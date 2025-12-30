@@ -1083,17 +1083,16 @@ int main(int argc, char **argv)
   int maxits = args.maxits;
   int output_comm_matrix = args.output_comm_matrix;
 
-  // 1. SPLIT COMMUNICATOR (Same as before)
+  // 1. Split communictor to different node
   int sharedrank = -1;
   int sharedcommsize = 1;
   MPI_Comm sharedcomm;
   err = MPI_Comm_split_type(mpicomm, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL, &sharedcomm);
-  // (Error checking omitted for brevity, same as original)
   MPI_Comm_rank(sharedcomm, &sharedrank);
   MPI_Comm_size(sharedcomm, &sharedcommsize);
   MPI_Comm_free(&sharedcomm);
 
-  // 2. SYCL DEVICE SELECTION (Replaces CUDA block)
+  // 2. SYCL DEVICE SELECTION
   int device_id = 0;
   int ndevices = 0;
 
@@ -1147,7 +1146,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // 4. REPORTING (Same as before, using 'device_id' for the integer print)
   if (rank == root)
   {
     fprintf(stderr, "%d MPI processes\n", commsize);
@@ -1187,7 +1185,6 @@ int main(int argc, char **argv)
   {
     MPI_Send(&cpuslen, 1, MPI_INT, root, 0, mpicomm);
     MPI_Send(cpus, cpuslen, MPI_CHAR, root, 0, mpicomm);
-    // Send the SYCL device ID
     MPI_Send(&device_id, 1, MPI_INT, root, 0, mpicomm);
 
     int len = 0;
@@ -1200,13 +1197,118 @@ int main(int argc, char **argv)
   free(cpus);
   MPI_Barrier(mpicomm);
 
-  /* read matrix A */
-  struct acgsymcsrmatrix A;
-  // ... (Matrix reading logic would go here, simplified for skeleton)
-  // For now, let's assume we have A, b, x initialized or we just skip to solver
-  // init for skeleton
+  /* Show solver type */
+  if (rank == root)
+  {
+    if (args.solvertype == acgsolver_acg)
+    {
+      fprintf(stderr, "using aCG solver\n");
+    }
+  }
 
-  /* initialize SYCL queue */
+  /* create communicator for acg solver */
+  struct acgcomm comm;
+  if (rank == root)
+    fprintf(stderr, "Using MPI for communication\n");
+  err = acgcomm_init_mpi(&comm, mpicomm, &mpierrcode);
+  if (err)
+  {
+    fprintf(stderr, "%s:%d: %s\n", program_invocation_short_name, __LINE__, acgerrcodestr(err, mpierrcode));
+    MPI_Abort(mpicomm, EXIT_FAILURE);
+  }
+
+  if (verbose > 0)
+  {
+    if (rank == root)
+      fprintf(stderr, "reading matrix: ");
+    MPI_Barrier(mpicomm);
+    gettime(&t0);
+    MPI_Barrier(mpicomm);
+  }
+
+  struct acgmtxfile mtxfile;
+  int64_t lines_read = 0, bytes_read = 0;
+  if (rank == root)
+  {
+    int idxbase = 0;
+    enum mtxlayout layout = mtxrowmajor;
+    err = acgmtxfile_read(
+        &mtxfile, layout, args.binary, idxbase, mtxdouble,
+        Apath, args.gzip, &lines_read, &bytes_read);
+    if (err)
+    {
+      if (lines_read < 0)
+      {
+        fprintf(stderr, "%s: %s: %s\n",
+                program_invocation_short_name,
+                Apath, acgerrcodestr(err, 0));
+      }
+      else
+      {
+        fprintf(stderr, "%s: %s:%" PRId64 ": %s\n",
+                program_invocation_short_name,
+                Apath, lines_read + 1, acgerrcodestr(err, 0));
+      }
+      errexit = true;
+      MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+    if (mtxfile.object != mtxmatrix)
+    {
+      fprintf(stderr, "%s: %s: expected matrix; object is %s\n",
+              program_invocation_short_name, Apath, mtxobjectstr(mtxfile.object));
+      errexit = true;
+      MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+    if (mtxfile.format != mtxcoordinate)
+    {
+      fprintf(stderr, "%s: %s: expected coordinate; format is %s\n",
+              program_invocation_short_name, Apath, mtxformatstr(mtxfile.format));
+      errexit = true;
+      MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+    if (mtxfile.symmetry != mtxsymmetric)
+    {
+      fprintf(stderr, "%s: %s: expected symmetric; symmetry is %s\n",
+              program_invocation_short_name, Apath, mtxsymmetrystr(mtxfile.symmetry));
+      errexit = true;
+      MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+    errexit = false;
+    MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+  }
+  else
+  {
+    MPI_Bcast(&errexit, 1, MPI_C_BOOL, root, mpicomm);
+    if (errexit)
+    {
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (verbose > 0)
+  {
+    MPI_Barrier(mpicomm);
+    gettime(&t1);
+    if (rank == root)
+    {
+      int64_t mtxsz =
+          (mtxfile.rowidx ? mtxfile.nnzs * sizeof(mtxfile.rowidx) : 0) + (mtxfile.colidx ? mtxfile.nnzs * sizeof(mtxfile.colidx) : 0) + (mtxfile.data && mtxfile.datatype == mtxint ? mtxfile.nnzs * sizeof(int) : 0) + (mtxfile.data && mtxfile.datatype == mtxdouble ? mtxfile.nnzs * sizeof(double) : 0);
+      fprintf(stderr, "%'.6f seconds (%'.1f MB/s, %'.1f MiB, %" PRIdx " rows, %" PRId64 " nonzeros)\n",
+              elapsed(t0, t1), 1.0e-6 * bytes_read / elapsed(t0, t1),
+              (double)mtxsz / 1024.0 / 1024.0,
+              mtxfile.nrows, mtxfile.nnzs);
+    }
+  }
+
   sycl::queue q;
   try
   {
