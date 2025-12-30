@@ -226,129 +226,128 @@ int parse_double(double *x, const char *s, char **outendptr,
  * ‘program_options_print_usage()’ prints a usage text.
  */
 static void program_options_print_usage(
-    FILE * f)
+    FILE *f)
 {
-    fprintf(f, "Usage: %s [OPTION..] A [b] [x0]\n", program_name);
+  fprintf(f, "Usage: %s [OPTION..] A [b] [x0]\n", program_name);
 }
 
 /**
  * ‘program_options_print_help()’ prints a help text.
  */
 static void program_options_print_help(
-    FILE * f)
+    FILE *f)
 {
-    program_options_print_usage(f);
-    fprintf(f, "\n");
-    fprintf(f, " Solve a linear system of equations ‘Ax=b’ using the conjugate gradient (CG)\n");
-    fprintf(f, " method for a matrix ‘A’ and right-hand side vector ‘b’.\n");
-    fprintf(f, "\n");
-    fprintf(f, " Positional arguments:\n");
-    fprintf(f, "  A    path to Matrix Market file for a matrix A\n");
-    fprintf(f, "  b    optional path to Matrix Market file for a right-hand side vector b\n");
-    fprintf(f, "  x0   optional path to Matrix Market file for an initial guess x0\n");
+  program_options_print_usage(f);
+  fprintf(f, "\n");
+  fprintf(f, " Solve a linear system of equations ‘Ax=b’ using the conjugate gradient (CG)\n");
+  fprintf(f, " method for a matrix ‘A’ and right-hand side vector ‘b’.\n");
+  fprintf(f, "\n");
+  fprintf(f, " Positional arguments:\n");
+  fprintf(f, "  A    path to Matrix Market file for a matrix A\n");
+  fprintf(f, "  b    optional path to Matrix Market file for a right-hand side vector b\n");
+  fprintf(f, "  x0   optional path to Matrix Market file for an initial guess x0\n");
 #ifdef ACG_HAVE_LIBZ
-    fprintf(f, "\n");
-    fprintf(f, " Input options:\n");
-    fprintf(f, "  -z, --gzip, --gunzip, --ungzip    filter files through gzip\n");
+  fprintf(f, "\n");
+  fprintf(f, " Input options:\n");
+  fprintf(f, "  -z, --gzip, --gunzip, --ungzip    filter files through gzip\n");
 #endif
-    fprintf(f, "  --binary              read Matrix Market files in binary format\n");
-    fprintf(f, "\n");
-    fprintf(f, " Partitioning options:\n");
-    fprintf(f, "  --partition=FILE      read partition vector from Matrix Market file.\n");
-    fprintf(f, "  --binary-partition    read partition vector in binary format\n");
-    fprintf(f, "  --seed=N              random number seed. [0]\n");
-    fprintf(f, "\n");
-    fprintf(f, " Solver options:\n");
-    fprintf(f, "  --solver TYPE         acg, acg-pipelined, acg-device, acg-pipelined-device or petsc. [acg]\n");
-    fprintf(f, "  --max-iterations N    maximum number of iterations. [100]\n");
-    fprintf(f, "  --diff-atol TOL       stopping criterion for difference in solution iterates, ‖xₖ₊₁-xₖ‖ < TOL. [0]\n");
-    fprintf(f, "  --diff-rtol TOL       stopping criterion for relative difference in solution iterates, ‖xₖ₊₁-xₖ‖/‖x₀‖ < TOL. [0]\n");
-    fprintf(f, "  --residual-atol TOL   stopping criterion for residual norm, ‖b-Ax‖ < TOL. [0]\n");
-    fprintf(f, "  --residual-rtol TOL   stopping criterion for relative residual norm, ‖b-Ax‖/‖b‖ < TOL. [1e-9]\n");
-    fprintf(f, "  --epsilon TOL         add TOL to the diagonal of A. [0]\n");
-    fprintf(f, "  --warmup N            perform N warmup iterations. [10]\n");
-    fprintf(f, "\n");
-    fprintf(f, " Communication library options:\n");
-    fprintf(f, "  --comm TYPE           none, mpi, nccl or nvshmem. [mpi]\n");
-    fprintf(f, "\n");
-    fprintf(f, " Solver verification options:\n");
-    fprintf(f, "  --manufactured-solution  Use a manufactured solution and right-hand side.\n");
-    fprintf(f, "\n");
-    fprintf(f, " Output options:\n");
-    /* fprintf(f, "  --repeat=N           repeat solver N times\n"); */
-    fprintf(f, "  --numfmt FMT         Format string for outputting numerical values.\n");
-    fprintf(f, "                       The format specifiers '%%e', '%%E', '%%f', '%%F',\n");
-    fprintf(f, "                       '%%g' or '%%G' may be used. Flags, field width and\n");
-    fprintf(f, "                       precision may also be specified, e.g., \"%%+3.1f\".\n");
-    fprintf(f, "  --output-comm-matrix print communication matrix to standard output\n");
-    fprintf(f, "\n");
-    fprintf(f, "  -v, --verbose        be more verbose\n");
-    fprintf(f, "  -q, --quiet          suppress output\n");
-    fprintf(f, "\n");
-    fprintf(f, " Other options:\n");
-    fprintf(f, "  -h, --help           display this help and exit\n");
-    fprintf(f, "  --version            display version information and exit\n");
-    fprintf(f, "\n");
-    fprintf(f, "Report bugs to: <james@simula.no>\n");
+  fprintf(f, "  --binary              read Matrix Market files in binary format\n");
+  fprintf(f, "\n");
+  fprintf(f, " Partitioning options:\n");
+  fprintf(f, "  --partition=FILE      read partition vector from Matrix Market file.\n");
+  fprintf(f, "  --binary-partition    read partition vector in binary format\n");
+  fprintf(f, "  --seed=N              random number seed. [0]\n");
+  fprintf(f, "\n");
+  fprintf(f, " Solver options:\n");
+  fprintf(f, "  --solver TYPE         acg, acg-pipelined, acg-device, acg-pipelined-device or petsc. [acg]\n");
+  fprintf(f, "  --max-iterations N    maximum number of iterations. [100]\n");
+  fprintf(f, "  --diff-atol TOL       stopping criterion for difference in solution iterates, ‖xₖ₊₁-xₖ‖ < TOL. [0]\n");
+  fprintf(f, "  --diff-rtol TOL       stopping criterion for relative difference in solution iterates, ‖xₖ₊₁-xₖ‖/‖x₀‖ < TOL. [0]\n");
+  fprintf(f, "  --residual-atol TOL   stopping criterion for residual norm, ‖b-Ax‖ < TOL. [0]\n");
+  fprintf(f, "  --residual-rtol TOL   stopping criterion for relative residual norm, ‖b-Ax‖/‖b‖ < TOL. [1e-9]\n");
+  fprintf(f, "  --epsilon TOL         add TOL to the diagonal of A. [0]\n");
+  fprintf(f, "  --warmup N            perform N warmup iterations. [10]\n");
+  fprintf(f, "\n");
+  fprintf(f, " Communication library options:\n");
+  fprintf(f, "  --comm TYPE           none, mpi, nccl or nvshmem. [mpi]\n");
+  fprintf(f, "\n");
+  fprintf(f, " Solver verification options:\n");
+  fprintf(f, "  --manufactured-solution  Use a manufactured solution and right-hand side.\n");
+  fprintf(f, "\n");
+  fprintf(f, " Output options:\n");
+  /* fprintf(f, "  --repeat=N           repeat solver N times\n"); */
+  fprintf(f, "  --numfmt FMT         Format string for outputting numerical values.\n");
+  fprintf(f, "                       The format specifiers '%%e', '%%E', '%%f', '%%F',\n");
+  fprintf(f, "                       '%%g' or '%%G' may be used. Flags, field width and\n");
+  fprintf(f, "                       precision may also be specified, e.g., \"%%+3.1f\".\n");
+  fprintf(f, "  --output-comm-matrix print communication matrix to standard output\n");
+  fprintf(f, "\n");
+  fprintf(f, "  -v, --verbose        be more verbose\n");
+  fprintf(f, "  -q, --quiet          suppress output\n");
+  fprintf(f, "\n");
+  fprintf(f, " Other options:\n");
+  fprintf(f, "  -h, --help           display this help and exit\n");
+  fprintf(f, "  --version            display version information and exit\n");
+  fprintf(f, "\n");
+  fprintf(f, "Report bugs to: <james@simula.no>\n");
 }
 
 /**
  * ‘program_options_print_version()’ prints version information.
  */
 static void program_options_print_version(
-    FILE * f)
+    FILE *f)
 {
-    fprintf(f, "%s %s\n", program_name, program_version);
-    fprintf(f, "32/64-bit integers: %ld-bit\n", sizeof(acgidx_t)*CHAR_BIT);
+  fprintf(f, "%s %s\n", program_name, program_version);
+  fprintf(f, "32/64-bit integers: %ld-bit\n", sizeof(acgidx_t) * CHAR_BIT);
 #ifdef ACG_ENABLE_PROFILING
-    fprintf(f, "profiling: enabled\n");
+  fprintf(f, "profiling: enabled\n");
 #else
-    fprintf(f, "profiling: disabled\n");
+  fprintf(f, "profiling: disabled\n");
 #endif
 #ifdef ACG_HAVE_MPI
-    char mpistr[MPI_MAX_LIBRARY_VERSION_STRING] = ""; int len;
-    MPI_Get_library_version(mpistr, &len);
-    fprintf(f, "MPI: %d.%d (%s)\n", MPI_VERSION, MPI_SUBVERSION, mpistr);
+  char mpistr[MPI_MAX_LIBRARY_VERSION_STRING] = "";
+  int len;
+  MPI_Get_library_version(mpistr, &len);
+  fprintf(f, "MPI: %d.%d (%s)\n", MPI_VERSION, MPI_SUBVERSION, mpistr);
 #else
-    fprintf(f, "MPI: no\n");
+  fprintf(f, "MPI: no\n");
 #endif
 #ifdef ACG_HAVE_NCCL
-    int ncclversion = 0;
-    ncclGetVersion(&ncclversion);
-    fprintf(f, "nccl: %d\n", ncclversion);
+  int ncclversion = 0;
+  ncclGetVersion(&ncclversion);
+  fprintf(f, "nccl: %d\n", ncclversion);
 #else
-   fprintf(f, "nccl: no\n");
+  fprintf(f, "nccl: no\n");
 #endif
 #ifdef ACG_HAVE_NVSHMEM
-   int nvshmemmajor, nvshmemminor, nvshmempatch;
-   acg_nvshmemx_vendor_get_version_info(&nvshmemmajor, &nvshmemminor, &nvshmempatch);
-   fprintf(f, "NVSHMEM: %d.%d.%d\n", nvshmemmajor, nvshmemminor, nvshmempatch);
+  int nvshmemmajor, nvshmemminor, nvshmempatch;
+  acg_nvshmemx_vendor_get_version_info(&nvshmemmajor, &nvshmemminor, &nvshmempatch);
+  fprintf(f, "NVSHMEM: %d.%d.%d\n", nvshmemmajor, nvshmemminor, nvshmempatch);
 #else
-   fprintf(f, "NVSHMEM: no\n");
+  fprintf(f, "NVSHMEM: no\n");
 #endif
 #ifdef ACG_HAVE_LIBZ
-    fprintf(f, "zlib: "ZLIB_VERSION"\n");
+  fprintf(f, "zlib: " ZLIB_VERSION "\n");
 #else
-    fprintf(f, "zlib: no\n");
+  fprintf(f, "zlib: no\n");
 #endif
 #ifdef ACG_HAVE_METIS
-    fprintf(f, "metis: %d.%d.%d (%d-bit index, %d-bit real)\n",
-            METIS_VER_MAJOR, METIS_VER_MINOR, METIS_VER_SUBMINOR,
-            IDXTYPEWIDTH, REALTYPEWIDTH);
+  fprintf(f, "metis: %d.%d.%d (%d-bit index, %d-bit real)\n",
+          METIS_VER_MAJOR, METIS_VER_MINOR, METIS_VER_SUBMINOR,
+          IDXTYPEWIDTH, REALTYPEWIDTH);
 #else
-    fprintf(f, "metis: no\n");
+  fprintf(f, "metis: no\n");
 #endif
 #ifdef ACG_HAVE_PETSC
-    fprintf(f, "PETSc: %d.%d.%d\n", PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR);
+  fprintf(f, "PETSc: %d.%d.%d\n", PETSC_VERSION_MAJOR, PETSC_VERSION_MINOR, PETSC_VERSION_SUBMINOR);
 #else
-    fprintf(f, "PETSc: no\n");
+  fprintf(f, "PETSc: no\n");
 #endif
-    fprintf(f, "\n");
-    fprintf(f, "%s\n", program_copyright);
-    fprintf(f, "%s\n", program_license);
+  fprintf(f, "\n");
+  fprintf(f, "%s\n", program_copyright);
+  fprintf(f, "%s\n", program_license);
 }
-
-
 
 struct program_options
 {
@@ -933,6 +932,7 @@ int main(int argc, char **argv)
   acgtime_t t0, t1;
 
   /* 1a) initialise MPI */
+
   const MPI_Comm mpicomm = MPI_COMM_WORLD;
   int commsize, rank;
   const int root = 0;
@@ -1007,12 +1007,9 @@ int main(int argc, char **argv)
 
   /* 1b) parse program options */
   struct program_options args;
-  int nargs;
-
   err = program_options_init(&args);
   errexit = err;
   MPI_Allreduce(MPI_IN_PLACE, &errexit, 1, MPI_C_BOOL, MPI_LOR, mpicomm);
-
   if (errexit)
   {
     if (err)
@@ -1020,6 +1017,7 @@ int main(int argc, char **argv)
     MPI_Abort(mpicomm, EXIT_FAILURE);
   }
 
+  int nargs;
   err = parse_program_options(argc, argv, &args, &nargs);
   errexit = err;
   MPI_Allreduce(MPI_IN_PLACE, &errexit, 1, MPI_C_BOOL, MPI_LOR, mpicomm);
@@ -1071,6 +1069,19 @@ int main(int argc, char **argv)
     MPI_Finalize();
     return EXIT_FAILURE;
   }
+
+  const char *Apath = args.Apath;
+  const char *bpath = args.bpath;
+  int quiet = args.quiet;
+  int verbose = args.verbose;
+  const char *numfmt = args.numfmt;
+  acgidx_t seed = args.seed;
+  double diffatol = args.diffatol;
+  double diffrtol = args.diffrtol;
+  double residualatol = args.residualatol;
+  double residualrtol = args.residualrtol;
+  int maxits = args.maxits;
+  int output_comm_matrix = args.output_comm_matrix;
 
   /* read matrix A */
   struct acgsymcsrmatrix A;
