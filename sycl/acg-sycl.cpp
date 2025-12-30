@@ -1083,6 +1083,123 @@ int main(int argc, char **argv)
   int maxits = args.maxits;
   int output_comm_matrix = args.output_comm_matrix;
 
+  // 1. SPLIT COMMUNICATOR (Same as before)
+  int sharedrank = -1;
+  int sharedcommsize = 1;
+  MPI_Comm sharedcomm;
+  err = MPI_Comm_split_type(mpicomm, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL, &sharedcomm);
+  // (Error checking omitted for brevity, same as original)
+  MPI_Comm_rank(sharedcomm, &sharedrank);
+  MPI_Comm_size(sharedcomm, &sharedcommsize);
+  MPI_Comm_free(&sharedcomm);
+
+  // 2. SYCL DEVICE SELECTION (Replaces CUDA block)
+  int device_id = 0;
+  int ndevices = 0;
+
+  try
+  {
+    // Get all available GPU devices
+    std::vector<sycl::device> devices = sycl::device::get_devices(sycl::info::device_type::gpu);
+    ndevices = devices.size();
+
+    if (ndevices == 0)
+    {
+      fprintf(stderr, "Error: No SYCL GPU devices found on rank %d\n", rank);
+      MPI_Abort(mpicomm, EXIT_FAILURE);
+    }
+
+    device_id = sharedrank % ndevices;
+    sycl::device selected_device = devices[device_id];
+
+    sycl::queue q(selected_device, sycl::property::queue::in_order());
+
+    std::string devName = selected_device.get_info<sycl::info::device::name>();
+    std::cout << "Rank " << rank << " using device " << device_id << ": " << devName << std::endl;
+  }
+  catch (sycl::exception const &e)
+  {
+    std::cerr << "SYCL exception: " << e.what() << std::endl;
+    MPI_Abort(mpicomm, EXIT_FAILURE);
+  }
+
+  // 3. CPU AFFINITY (Same as before)
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  err = sched_getaffinity(0, sizeof(mask), &mask);
+  int cpuslen = 0;
+  for (int i = 0, n = 0; i < CPU_SETSIZE; i++)
+  {
+    if (CPU_ISSET(i, &mask))
+    {
+      cpuslen += snprintf(NULL, 0, n == 0 ? "%d" : ",%d", i);
+      n++;
+    }
+  }
+  char *cpus = (char *)malloc(cpuslen + 1);
+  memset(cpus, 0, cpuslen);
+  for (int i = 0, j = 0, n = 0; i < CPU_SETSIZE; i++)
+  {
+    if (CPU_ISSET(i, &mask))
+    {
+      j += snprintf(&cpus[j], cpuslen - j + 1, n == 0 ? "%d" : ",%d", i);
+      n++;
+    }
+  }
+
+  // 4. REPORTING (Same as before, using 'device_id' for the integer print)
+  if (rank == root)
+  {
+    fprintf(stderr, "%d MPI processes\n", commsize);
+    fprintf(stderr, "Mapping of MPI processes to CPU cores and SYCL devices:\n");
+
+    for (int p = 0; p < commsize; p++)
+    {
+      if (rank == p)
+      {
+        fprintf(stderr, " rank %d -> CPU cores %s and device %d on %s\n", rank, cpus, device_id, processorname);
+      }
+      else
+      {
+        int r_cpuslen;
+        MPI_Recv(&r_cpuslen, 1, MPI_INT, p, 0, mpicomm, MPI_STATUS_IGNORE);
+        char *r_cpus = (char *)malloc(r_cpuslen + 1);
+        MPI_Recv(r_cpus, r_cpuslen, MPI_CHAR, p, 0, mpicomm, MPI_STATUS_IGNORE);
+        r_cpus[r_cpuslen] = '\0';
+
+        int r_device;
+        MPI_Recv(&r_device, 1, MPI_INT, p, 0, mpicomm, MPI_STATUS_IGNORE);
+
+        int len = 0;
+        char r_procname[MPI_MAX_PROCESSOR_NAME + 1];
+        MPI_Recv(&len, 1, MPI_INT, p, 0, mpicomm, MPI_STATUS_IGNORE);
+        if (len > MPI_MAX_PROCESSOR_NAME)
+          len = MPI_MAX_PROCESSOR_NAME;
+        MPI_Recv(r_procname, len, MPI_CHAR, p, 0, mpicomm, MPI_STATUS_IGNORE);
+        r_procname[len] = '\0';
+
+        fprintf(stderr, " rank %d -> CPU cores %s and device %d on %s\n", p, r_cpus, r_device, r_procname);
+        free(r_cpus);
+      }
+    }
+  }
+  else
+  {
+    MPI_Send(&cpuslen, 1, MPI_INT, root, 0, mpicomm);
+    MPI_Send(cpus, cpuslen, MPI_CHAR, root, 0, mpicomm);
+    // Send the SYCL device ID
+    MPI_Send(&device_id, 1, MPI_INT, root, 0, mpicomm);
+
+    int len = 0;
+    char processorname[MPI_MAX_PROCESSOR_NAME + 1];
+    MPI_Get_processor_name(processorname, &len);
+    MPI_Send(&len, 1, MPI_INT, root, 0, mpicomm);
+    MPI_Send(processorname, len, MPI_CHAR, root, 0, mpicomm);
+  }
+
+  free(cpus);
+  MPI_Barrier(mpicomm);
+
   /* read matrix A */
   struct acgsymcsrmatrix A;
   // ... (Matrix reading logic would go here, simplified for skeleton)
